@@ -1,11 +1,25 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HeroesComponent } from './heroes.component';
-import { NO_ERRORS_SCHEMA } from '@angular/core';
+import { NO_ERRORS_SCHEMA, Directive, Input } from '@angular/core';
 import { HeroService } from '../hero.service';
 import { of } from 'rxjs';
 import { By } from '@angular/platform-browser';
 import { HeroComponent } from '../hero/hero.component';
 import { Spied } from '../Spied';
+import { query } from '@angular/core/src/render3';
+
+@Directive({
+  selector: '[routerLink]',
+  host: { '(click)': 'onClick()'}
+})
+export class RouterLinkDirectiveStub {
+  @Input('routerLink') linkParams: any;
+  navigatedTo: any = null;
+
+  onClick() {
+    this.navigatedTo = this.linkParams;
+  }
+};
 
 describe('HeroesComponent (deep tests)', () => {
   let fixture: ComponentFixture<HeroesComponent>;
@@ -22,12 +36,13 @@ describe('HeroesComponent (deep tests)', () => {
     TestBed.configureTestingModule({
       declarations: [
         HeroesComponent,
+        RouterLinkDirectiveStub,
         HeroComponent
       ],
       providers: [
         { provide: HeroService, useValue: mockHeroService }
       ],
-      schemas: [NO_ERRORS_SCHEMA]
+      // schemas: [NO_ERRORS_SCHEMA]
     });
     fixture = TestBed.createComponent(HeroesComponent);
     mockHeroService.getHeroes.and.returnValue(of(HEROES));
@@ -44,5 +59,42 @@ describe('HeroesComponent (deep tests)', () => {
     }
   });
 
+  it(`should call heroService.deleteHero when the Hero Component's delete button is clicked`, () => {
+    spyOn(fixture.componentInstance, 'delete');
+    mockHeroService.getHeroes.and.returnValue(of(HEROES));
+    fixture.detectChanges();
+    const heroComponents = fixture.debugElement.queryAll(By.directive(HeroComponent));
+    heroComponents[0].query(By.css('button')).triggerEventHandler('click', { stopPropagation: () => {}});
+    expect(fixture.componentInstance.delete).toHaveBeenCalledWith(HEROES[0]);
+
+  });
+
+  it('should add a new hero to the hero list when the add button is clicked', () => {
+   mockHeroService.getHeroes.and.returnValue(of(HEROES));
+   fixture.detectChanges();
+   const name = 'Mr Ice';
+   mockHeroService.addHero.and.returnValue(of({id: 5, name: name, strength: 4}));
+   const inputElement = fixture.debugElement.query(By.css('input')).nativeElement;
+   inputElement.value = name;
+   const addButton = fixture.debugElement.queryAll(By.css('button'))[0];
+  //  console.log('addbutton', addButton);
+   addButton.triggerEventHandler('click', null);
+   fixture.detectChanges();
+   const heroText = fixture.debugElement.query(By.css('ul')).nativeElement.textContent;
+   expect(heroText).toContain(name);
+  });
+
+  it('should have the correct route for the first hero', () => {
+    const heroComponents = fixture.debugElement.queryAll(By.directive(HeroComponent));
+    let routerLink = heroComponents[0]
+    .query(By.directive(RouterLinkDirectiveStub)).injector.get(RouterLinkDirectiveStub);
+
+    heroComponents[0].query(By.css('a')).triggerEventHandler('click', null);
+
+    expect(routerLink.navigatedTo).toBe('/detail/1');
+
+
+
+  });
 
 });
