@@ -1,6 +1,7 @@
 import { HeroComponent } from './hero.component';
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
+import { By } from '@angular/platform-browser';
 
 describe('HeroComponent (shallow tests)', () => {
   let fixture: ComponentFixture<HeroComponent>;
@@ -21,6 +22,9 @@ describe('HeroComponent (shallow tests)', () => {
   it('should render the name inside an anchor tag', () => {
     fixture.componentInstance.hero = { id: 1, name: 'SuperDude', strength: 3};
     fixture.detectChanges();
+    expect(fixture.debugElement.query(By.css('a')).nativeElement.textContent).toContain('SuperDude');
+    console.log(fixture.nativeElement.querySelector('a'));
+
     expect(fixture.nativeElement.querySelector('a').textContent).toContain('SuperDude');
   });
 
